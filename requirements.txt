@@ -1,0 +1,28 @@
+# --- Core ML / PyTorch ---
+torch==2.3.0
+torchaudio==2.3.0
+numpy==1.26.4
+
+# --- Perception: Video + Audio ---
+opencv-python==4.9.0.80
+mediapipe==0.10.9
+sounddevice==0.4.6
+scipy==1.12.0
+
+# --- Transformers / Diffusion ---
+transformers==4.37.2
+diffusers==0.25.0
+accelerate==0.25.0
+safetensors==0.4.2
+huggingface-hub==0.20.3
+
+# --- Audio Feature Extractors ---
+librosa==0.10.1
+soundfile==0.12.1
+
+# --- Emotion Recognition (FER+) ---
+Pillow==10.2.0
+
+# --- Misc utilities ---
+tqdm==4.66.1
+requests==2.31.0

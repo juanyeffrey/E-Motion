@@ -1,0 +1,163 @@
+#############################################
+# PYTHON
+#############################################
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+*.pyd
+*.dll
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Unit test / coverage reports
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.cache/
+nosetests.xml
+coverage.xml
+
+# IPython notebook checkpoints
+.ipynb_checkpoints/
+
+#############################################
+# EDITORS & OS FILES
+#############################################
+
+# VSCode
+.vscode/
+.code-workspace
+
+# PyCharm / IntelliJ
+.idea/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+#############################################
+# LOGS + TEMP FILES
+#############################################
+
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+
+#############################################
+# DATASETS / LARGE FILES
+#############################################
+
+# Datasets (MOSEI, MELD, etc.)
+datasets/
+data/
+*.npz
+*.npy
+
+# Audio/video samples
+*.wav
+*.mp3
+*.flac
+*.mp4
+*.avi
+*.mov
+
+# Extracted MOSEI raw files
+raw_datasets/
+mosei/
+mosei_raw/
+mosei_cache/
+
+#############################################
+# MODEL WEIGHTS / CHECKPOINTS
+#############################################
+
+# Stable Diffusion, CLIP, Wav2Vec, MediaPipe caches
+models/
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.safetensors
+
+# HuggingFace cache (HUGE)
+huggingface/
+.huggingface/
+huggingface_cache/
+~/.cache/huggingface/
+
+# Transformers, Diffusers cache
+~/.cache/torch/
+~/.cache/transformers/
+~/.cache/diffusers/
+
+#############################################
+# PROJECT-SPECIFIC
+#############################################
+
+# Projection layer checkpoints
+projection_checkpoints*/
+projection_layer/checkpoints/
+projection_layer/*_checkpoints/
+
+# Output images from demos
+outputs/
+*.png
+*.jpg
+
+# Live streaming & webcam frames
+frames/
+recordings/
+
+# Temporary perception debug dumps
+perception_debug/
+*.pickle
+
+#############################################
+# ENVIRONMENT / CONFIG
+#############################################
+
+# Local environment variables
+.env
+.env.*
+
+# Jupyter notebooks auto-saved
+*.ipynb_checkpoints*
+
+#############################################
+# MISC
+#############################################
+
+# Backup files
+*~
+*.bak
+*.backup
+
+# Lock files
+poetry.lock
+Pipfile.lock
+yarn.lock
+package-lock.json

@@ -99,18 +99,37 @@ def show_image(image, window_name="AMES Diffusion Output"):
 
 
 def main():
-    print("Collecting perception embedding from webcam + mic...")
-    perception_vec = collect_perception_embedding(duration_seconds=5.0)
-    print(f"Perception vector dim: {perception_vec.shape[0]}")
-
     print("Initializing diffusion model (this may take a bit the first time)...")
-    perception_dim = perception_vec.shape[0]
-    ames_diff = AmesDiffusion(perception_dim=perception_dim)
+    dummy_dim = 128
+    ames_diff = AmesDiffusion(perception_dim=dummy_dim)
+    random_vec = np.random.randn(dummy_dim)
+    print("Generating reference image (random emotion)...")
+    reference_image = ames_diff.generate_image_from_perception(random_vec)
+    show_image(reference_image, window_name="Reference Image (Project Target)")
 
-    print("Generating image conditioned on your expression...")
-    image = ames_diff.generate_image_from_perception(perception_vec)
+    print("We will now take three photos, each three seconds apart. Please maintain a different expression to allow for comparison of emotional changes.")
+    time.sleep(2)
 
-    show_image(image)
+    perception_vecs = []
+    images = []
+    for i in range(3):
+        print(f"The {i+1} time：Please prepare your emojis :)……")
+        time.sleep(1)
+        perception_vec = collect_perception_embedding(duration_seconds=2.5)
+        perception_vecs.append(perception_vec)
+        if i == 0:
+            perception_dim = perception_vec.shape[0]
+            ames_diff = AmesDiffusion(perception_dim=perception_dim)
+        print("Generate an image corresponding to the current expression……")
+        image = ames_diff.generate_image_from_perception(perception_vec)
+        images.append(image)
+        print("Wait 3 seconds to proceed to the next photo……\n")
+        if i < 2:
+            time.sleep(3)
+
+    for idx, img in enumerate(images):
+        show_image(img, window_name=f"Your Emotion Image #{idx+1}")
+    print("All done! Please compare the emotional changes in the three images.")
 
 
 if __name__ == "__main__":

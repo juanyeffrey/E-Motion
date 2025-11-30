@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Webcam Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        video { border: 2px solid blue; }
+        #status { margin: 20px 0; padding: 10px; background: #f0f0f0; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Webcam Test</h1>
+    <div id="status">Initializing...</div>
+    <video id="video" width="640" height="480" autoplay></video>
+    <br>
+    <button onclick="testCapture()">Test Capture</button>
+    <br>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const status = document.getElementById('status');
+        
+        async function init() {
+            try {
+                status.textContent = 'Requesting webcam...';
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480 } 
+                });
+                video.srcObject = stream;
+                
+                video.onloadedmetadata = () => {
+                    status.textContent = `✅ Webcam ready! ${video.videoWidth}x${video.videoHeight}`;
+                };
+            } catch (error) {
+                status.textContent = '❌ Error: ' + error.message;
+                console.error(error);
+            }
+        }
+        
+        function testCapture() {
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, 640, 480);
+            status.textContent = '✅ Image captured to canvas below!';
+        }
+        
+        init();
+    </script>
+</body>
+</html>

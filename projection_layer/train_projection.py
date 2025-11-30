@@ -98,6 +98,28 @@ def main():
         output_dim=dataset.out_dim,
         hidden_dim=args.hidden_dim,
     ).to(DEVICE)
+    
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    
+    best_val_loss = float("inf")
+    best_model_path = os.path.join(args.out_dir, "best_model.pth")
+    
+    print("Starting training...")
+    for epoch in range(args.epochs):
+        train_loss = train_epoch(model, train_loader, optimizer)
+        val_loss = eval_epoch(model, val_loader)
+        
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            torch.save(model.state_dict(), best_model_path)
+            print(f"Epoch {epoch+1}/{args.epochs} | Train: {train_loss:.4f} | Val: {val_loss:.4f} | Saved best model!")
+        else:
+            print(f"Epoch {epoch+1}/{args.epochs} | Train: {train_loss:.4f} | Val: {val_loss:.4f}")
+            
+    print(f"Training complete. Best model saved to {best_model_path}")
+
+if __name__ == "__main__":
+    main()
 
     optimizer = torch.optim.AdamW(
         model.parameters(),

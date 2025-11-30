@@ -5,9 +5,10 @@ from transformers import AutoImageProcessor, AutoModelForImageClassification
 import numpy as np
 import cv2
 
-from .config import FER_MODEL_NAME, DEVICE
-
+# Constants
+FER_MODEL_NAME = "trpakov/vit-face-expression"
 FER_PROCESSOR_NAME = "microsoft/resnet-50"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 class FERPlusEmotionEmbedder:
     def __init__(self):

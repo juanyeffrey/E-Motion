@@ -7,25 +7,27 @@ import torch.nn.functional as F
 
 class ProjectionMLP(nn.Module):
     """
-    Baseline 2-layer MLP:
-      input_dim -> hidden_dim -> output_dim
-
-    We'll train it to map perception embeddings to CLIP embeddings.
+    Projects perception embeddings (facial landmarks + emotions) into CLIP text embedding space.
+    Matches the architecture used in diffusion/conditioning.py.
     """
 
     def __init__(self, input_dim: int, output_dim: int, hidden_dim: int = 1024):
         super().__init__()
-        self.fc1 = nn.Linear(input_dim, hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, output_dim)
-
-        # Optional: initialize small to avoid exploding activations
-        nn.init.xavier_uniform_(self.fc1.weight)
-        nn.init.zeros_(self.fc1.bias)
-        nn.init.xavier_uniform_(self.fc2.weight)
-        nn.init.zeros_(self.fc2.bias)
+        self.net = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.Tanh(),
+            nn.Linear(hidden_dim, output_dim),
+        )
+        
+        # Initialize with small weights for stability
+        for module in self.net.modules():
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_uniform_(module.weight, gain=0.5)
+                nn.init.zeros_(module.bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.fc2(x)
+        if x.ndim == 1:
+            x = x.unsqueeze(0)
+        return self.net(x)
         return x

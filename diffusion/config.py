@@ -61,7 +61,7 @@ STYLES = {
 PERCEPTION_DIM_NO_AUDIO = 1441  # 1434 + 7 (refine_landmarks=True gives 478 landmarks, FER+ has 7 classes)
 
 # Projection layer configuration
-USE_PROJECTION_LAYER = False  # Disabled to test pure prompt injection
+USE_PROJECTION_LAYER = True  # Disabled to test pure prompt injection
 PROJECTION_HIDDEN_DIM = 1024  # Hidden layer between input (1441) and output (768)
 
 # CLIP embedding dimension for SD 1.5

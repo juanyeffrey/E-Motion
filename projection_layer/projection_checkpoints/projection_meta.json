@@ -1,0 +1,29 @@
+{
+  "architecture": "E-Motion v1",
+  "input_dim": 1441,
+  "output_dim": 768,
+  "hidden_dim": 1024,
+  "activation": "LayerNorm + Tanh",
+  "best_cos_sim": 0.9877301156520844,
+  "emotions": [
+    "angry",
+    "disgust",
+    "fear",
+    "happy",
+    "neutral",
+    "sad",
+    "surprise"
+  ],
+  "emotion_prompts": {
+    "angry": "angry face",
+    "disgust": "disgusted face",
+    "fear": "fearful face",
+    "happy": "happy face",
+    "neutral": "neutral face",
+    "sad": "sad face",
+    "surprise": "surprised face"
+  },
+  "weighted_average": false,
+  "clip_model": "openai/clip-vit-large-patch14",
+  "sd_compatible": "SD 1.5 (768D)"
+}

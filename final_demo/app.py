@@ -156,7 +156,8 @@ def generate_styled_image():
             user_image=captured_image,
             perception_vec=perception_vec,
             style_choice=style_choice,
-            progress_callback=progress_callback
+            progress_callback=progress_callback,
+            emotion_label=emotion
         )
         
         progress_queue.put({'status': 'complete', 'progress': 100, 'message': 'Generation complete!'})

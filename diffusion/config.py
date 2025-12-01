@@ -12,7 +12,7 @@ SD_MODEL_ID = "runwayml/stable-diffusion-v1-5"  # SD 1.5 is compatible with Cont
 CONTROLNET_MODEL_ID = "lllyasviel/sd-controlnet-canny"
 IP_ADAPTER_MODEL_ID = "h94/IP-Adapter"  # Pre-trained IP-Adapter weights
 USE_LCM = True  # Use LCM-LoRA for 4-8 step fast generation
-USE_IP_ADAPTER = False  # Disabled to prevent crashes
+USE_IP_ADAPTER = True  # Disabled to prevent crashes
 
 # Device selection
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -38,7 +38,7 @@ STYLES = {
         'base_prompt': 'photorealistic portrait, natural lighting, detailed face',
         'num_inference_steps': 4,  # LCM allows 4-8 steps
         'use_controlnet': True,
-        'use_ipadapter': False,  # IP-Adapter DISABLED
+        'use_ipadapter': True,  # IP-Adapter DISABLED
         'controlnet_type': 'canny',
         'controlnet_conditioning_scale': 0.8,  # Increased from 0.5 to force stronger structural adherence
         'ipadapter_scale': 0.6,
@@ -49,7 +49,7 @@ STYLES = {
         'base_prompt': 'futuristic sci-fi portrait, neon lighting, cyberpunk aesthetic',
         'num_inference_steps': 4,  # LCM allows 4-8 steps
         'use_controlnet': True,
-        'use_ipadapter': False,  # IP-Adapter DISABLED
+        'use_ipadapter': True,  # IP-Adapter DISABLED
         'controlnet_type': 'canny',
         'controlnet_conditioning_scale': 0.8,  # Increased from 0.5 to force stronger structural adherence
         'ipadapter_scale': 0.6,

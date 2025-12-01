@@ -144,13 +144,9 @@ class StyleTransferDiffusion:
                 ref_path = style_config['reference_path']
                 if os.path.exists(ref_path):
                     self.reference_conditioner.cache_reference(style_name, ref_path)
-                    print(f"  [OK] Cached reference: {style_name} from {ref_path}")
-                    
-                    # Precompute IP-Adapter embeddings if enabled
-                    if USE_IP_ADAPTER:
-                        self.reference_conditioner.encode_reference(style_name)
+                    print(f"  ✓ Cached reference: {style_name}")
                 else:
-                    print(f"  [!] Reference not found: {ref_path} (will skip IP-Adapter)")
+                    print(f"  ✗ Reference not found: {ref_path}")
     
     @torch.no_grad()
     def generate_abstract(self, perception_vec: np.ndarray, progress_callback=None, emotion_label: str = None):
@@ -262,21 +258,13 @@ class StyleTransferDiffusion:
         
         # Add IP-Adapter conditioning if enabled
         if USE_IP_ADAPTER:
-            # Use cached embeddings or fallback to raw image
-            cached_embeds = self.reference_conditioner.encode_reference(style_name)
-            if cached_embeds is not None:
-                # Check if it's already embeddings or a PIL image
-                if isinstance(cached_embeds, torch.Tensor):
-                    # Ensure it's a list of tensors as expected by diffusers
-                    generation_kwargs['ip_adapter_image_embeds'] = [cached_embeds]
-                else:
-                    # It's a PIL image, pass directly
-                    generation_kwargs['ip_adapter_image'] = cached_embeds
-                
-                # Set IP-Adapter scale on controlnet_pipe
+            reference_image = self.reference_conditioner.get_reference(style_name)
+            if reference_image is not None:
+                # Pass PIL image directly - pipeline handles encoding internally
+                generation_kwargs['ip_adapter_image'] = reference_image
                 self.controlnet_pipe.set_ip_adapter_scale(style_config.get('ipadapter_scale', 0.6))
+                print(f"  + IP-Adapter: using {style_name} reference")
             else:
-                # This should not happen if references are properly loaded
                 print(f"  ⚠ No reference for {style_name}, skipping IP-Adapter")
                 
         image = self.controlnet_pipe(**generation_kwargs).images[0]

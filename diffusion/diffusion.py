@@ -60,37 +60,6 @@ class StyleTransferDiffusion:
             self.base_pipe.fuse_lora()
             self.base_pipe.scheduler = LCMScheduler.from_config(self.base_pipe.scheduler.config)
 
-        # Load IP-Adapter for reference image conditioning
-        if USE_IP_ADAPTER:
-            print("[StyleTransferDiffusion] Loading IP-Adapter...")
-            from transformers import CLIPVisionModelWithProjection, CLIPImageProcessor
-            
-            # Load CLIP vision encoder separately
-            print("  - Loading CLIP vision encoder...")
-            image_encoder = CLIPVisionModelWithProjection.from_pretrained(
-                "openai/clip-vit-large-patch14",
-                torch_dtype=self.dtype
-            ).to(DEVICE)
-            
-            feature_extractor = CLIPImageProcessor.from_pretrained(
-                "openai/clip-vit-large-patch14"
-            )
-            
-            # Register modules so load_ip_adapter finds them
-            self.base_pipe.register_modules(
-                image_encoder=image_encoder,
-                feature_extractor=feature_extractor
-            )
-            
-            # Load IP-Adapter weights
-            print("  - Loading IP-Adapter weights...")
-            self.base_pipe.load_ip_adapter(
-                "h94/IP-Adapter",
-                subfolder="models",
-                weight_name="ip-adapter_sd15.bin"
-            )
-            print("  ✓ IP-Adapter loaded successfully")
-        
         # Initialize ControlNet pipeline (for realistic/scifi)
         print(f"[StyleTransferDiffusion] Loading ControlNet model: {CONTROLNET_MODEL_ID}")
         self.controlnet = ControlNetModel.from_pretrained(
@@ -109,27 +78,44 @@ class StyleTransferDiffusion:
             "safety_checker": None,
             "feature_extractor": None,
         }
-        
-        # If IP-Adapter is used, pass the shared encoder and feature extractor
-        if USE_IP_ADAPTER:
-            controlnet_pipe_kwargs["image_encoder"] = self.base_pipe.image_encoder
-            controlnet_pipe_kwargs["feature_extractor"] = self.base_pipe.feature_extractor
             
         self.controlnet_pipe = StableDiffusionControlNetPipeline(**controlnet_pipe_kwargs).to(DEVICE)
         
-        # Explicitly register modules to ensure pipeline knows about them
-        if USE_IP_ADAPTER:
-            self.controlnet_pipe.register_modules(
-                image_encoder=self.base_pipe.image_encoder,
-                feature_extractor=self.base_pipe.feature_extractor
-            )
-        
         if USE_LCM:
             print("[StyleTransferDiffusion] Applying LCM-LoRA to ControlNet pipeline...")
-            # LoRA weights already loaded in base_pipe's unet, just update scheduler
-            # If we passed the scheduler in kwargs, it might already be LCM, but let's ensure config is consistent
             if not isinstance(self.controlnet_pipe.scheduler, LCMScheduler):
                  self.controlnet_pipe.scheduler = LCMScheduler.from_config(self.controlnet_pipe.scheduler.config)
+
+        # Load IP-Adapter on controlnet_pipe (this is the key fix!)
+        if USE_IP_ADAPTER:
+            print("[StyleTransferDiffusion] Loading IP-Adapter...")
+            from transformers import CLIPVisionModelWithProjection, CLIPImageProcessor
+            
+            # Load CLIP vision encoder
+            print("  - Loading CLIP vision encoder...")
+            image_encoder = CLIPVisionModelWithProjection.from_pretrained(
+                "openai/clip-vit-large-patch14",
+                torch_dtype=self.dtype
+            ).to(DEVICE)
+            
+            feature_extractor = CLIPImageProcessor.from_pretrained(
+                "openai/clip-vit-large-patch14"
+            )
+            
+            # Register modules on controlnet_pipe (not base_pipe!)
+            self.controlnet_pipe.register_modules(
+                image_encoder=image_encoder,
+                feature_extractor=feature_extractor
+            )
+            
+            # Load IP-Adapter weights on controlnet_pipe (not base_pipe!)
+            print("  - Loading IP-Adapter weights...")
+            self.controlnet_pipe.load_ip_adapter(
+                "h94/IP-Adapter",
+                subfolder="models",
+                weight_name="ip-adapter_sd15.bin"
+            )
+            print("  ✓ IP-Adapter loaded successfully")
         
         # Initialize conditioning modules
         print("[StyleTransferDiffusion] Initializing conditioners...")
@@ -138,7 +124,7 @@ class StyleTransferDiffusion:
             perception_dim, 
             use_projection=USE_PROJECTION_LAYER
         )
-        self.reference_conditioner = ReferenceConditioner(self.base_pipe)
+        self.reference_conditioner = ReferenceConditioner(self.controlnet_pipe)  # Use controlnet_pipe!
         self.controlnet_preprocessor = ControlNetPreprocessor(controlnet_type='canny')
         
         # Pre-load and cache reference images
@@ -280,7 +266,6 @@ class StyleTransferDiffusion:
             cached_embeds = self.reference_conditioner.encode_reference(style_name)
             if cached_embeds is not None:
                 # Check if it's already embeddings or a PIL image
-                import torch
                 if isinstance(cached_embeds, torch.Tensor):
                     # Ensure it's a list of tensors as expected by diffusers
                     generation_kwargs['ip_adapter_image_embeds'] = [cached_embeds]
@@ -288,8 +273,7 @@ class StyleTransferDiffusion:
                     # It's a PIL image, pass directly
                     generation_kwargs['ip_adapter_image'] = cached_embeds
                 
-                # Scale controls how much the reference style influences (0.0 = none, 1.0 = full)
-                # Use the base pipe to set scale, as it holds the UNet with IP-Adapter
+                # Set IP-Adapter scale on controlnet_pipe
                 self.controlnet_pipe.set_ip_adapter_scale(style_config.get('ipadapter_scale', 0.6))
             else:
                 # This should not happen if references are properly loaded

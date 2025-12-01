@@ -290,7 +290,7 @@ class StyleTransferDiffusion:
                 
                 # Scale controls how much the reference style influences (0.0 = none, 1.0 = full)
                 # Use the base pipe to set scale, as it holds the UNet with IP-Adapter
-                self.base_pipe.set_ip_adapter_scale(style_config.get('ipadapter_scale', 0.6))
+                self.controlnet_pipe.set_ip_adapter_scale(style_config.get('ipadapter_scale', 0.6))
             else:
                 # This should not happen if references are properly loaded
                 print(f"  ⚠ No reference for {style_name}, skipping IP-Adapter")

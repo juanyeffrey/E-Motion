@@ -172,13 +172,13 @@ class StyleTransferDiffusion:
         
         # Rich emotion descriptors for abstract art
         emotion_prompts = {
-            "angry": "chaotic red and black strokes, sharp jagged lines, intense energy, aggressive texture, storm-like, fiery, high contrast",
-            "disgust": "sickly green and purple, distorted shapes, uneven texture, repelling composition, murky atmosphere, unsettling",
-            "fear": "dark shadows, trembling lines, cold blue and grey, claustrophobic composition, nervous energy, mysterious, shadowy figures",
-            "happy": "bright yellow and orange, flowing curves, radiant light, harmonious composition, joyful energy, warm atmosphere, sunbursts",
-            "neutral": "balanced composition, soft beige and grey, minimalist, calm lines, steady rhythm, peaceful, structured geometry",
-            "sad": "melancholic blue and grey, raining texture, heavy downward strokes, lonely atmosphere, quiet composition, faded colors",
-            "surprise": "explosive colors, dynamic radial lines, shockwaves, vibrant contrast, sudden burst, electric energy, neon accents"
+            "angry": "violent red and black oil painting, chaotic brushstrokes, sharp jagged lines, exploding composition, aggressive texture, storm-like fury, intense contrast, visual noise",
+            "disgust": "sickly green and muddy brown, distorted melting shapes, uneven oozing texture, repelling composition, murky atmosphere, unsettling asymmetry, biological horror style",
+            "fear": "cold dark blue and charcoal grey, trembling thin lines, claustrophobic composition, deep shadows, nervous energy, mysterious fog, sharp angles, psychological horror",
+            "happy": "vibrant yellow and warm orange, flowing organic curves, radiant sunbursts, harmonious golden ratio composition, joyful energy, soft blooming textures, uplifting atmosphere",
+            "neutral": "balanced beige and soft grey, minimalist geometric shapes, calm horizontal lines, steady rhythm, peaceful symmetry, structured composition, zen garden aesthetic",
+            "sad": "melancholic deep blue and rain grey, heavy downward dripping strokes, lonely negative space, quiet composition, faded watercolor texture, tear-stained atmosphere",
+            "surprise": "electric neon colors, dynamic radial explosion, sudden shockwaves, high contrast pop art style, vibrant energy burst, erratic patterns, visual impact"
         }
 
         # Construct prompt with emotion
@@ -241,11 +241,32 @@ class StyleTransferDiffusion:
         # Construct prompt with emotion
         prompt = style_config['base_prompt']
         if emotion_label:
-            prompt += f", {emotion_label} facial expression, emotional {emotion_label}"
+            if style_name == 'scifi':
+                # Rich emotional combo artifacts (Visual metaphors for emotions)
+                combo_modifiers = {
+                    "happy": "radiant golden light, blooming flowers, warm sunbeams, floating petals, soft glowing aura, harmonious atmosphere, joyful energy",
+                    "sad": "falling rain, blue melancholic tones, heavy shadows, weeping willow textures, cold atmosphere, lonely composition, tear-stained glass effect",
+                    "angry": "burning fire, exploding sparks, jagged red lightning, aggressive storm clouds, intense heat haze, chaotic energy, cracked textures",
+                    "surprise": "sudden burst of confetti, electric shockwaves, vibrant pop-art colors, dynamic motion blur, wide-angle distortion, energetic splash",
+                    "fear": "creeping shadows, dark fog, trembling lines, cold pale light, claustrophobic vignette, mysterious silhouettes, nervous atmosphere",
+                    "disgust": "sickly green haze, distorted melting textures, uneven lighting, repelling composition, murky sludge, unsettling organic shapes",
+                    "neutral": "calm still water, balanced soft lighting, clean minimalist background, steady rhythm, peaceful zen garden, symmetrical composition"
+                }
+                modifier = combo_modifiers.get(emotion_label.lower(), f"{emotion_label} atmosphere")
+                prompt += f", {modifier}, {emotion_label} facial expression, highly expressive {emotion_label} emotion"
+                
+                # Standard negative prompt
+                negative_prompt = "low quality, blurry, sketch, drawing, bad anatomy, distorted face"
+            else:
+                # Standard realistic injection
+                prompt += f", {emotion_label} facial expression, emotional {emotion_label}"
+                negative_prompt = "cartoon, anime, 3d render, illustration, painting, low quality, blurry"
+            
             print(f"  + Injected emotion into prompt: '{prompt}'")
         
         generation_kwargs = {
             'prompt': prompt,
+            'negative_prompt': negative_prompt,
             'image': control_image,
             'num_inference_steps': style_config['num_inference_steps'],
             'controlnet_conditioning_scale': style_config['controlnet_conditioning_scale'],

@@ -68,10 +68,11 @@
             <img id="preview" alt="Captured photo">
             <br>
             <button id="retake-btn">Retake</button>
-            <button id="continue-btn">Continue</button>
+            <button id="generate-btn">Generate All Styles</button>
         </div>
     </div>
     
+<<<<<<< HEAD
     <!-- Step 2: Style Selection -->
     <div id="style-section" class="section">
         <h2>Step 2: Choose Style</h2>
@@ -84,8 +85,11 @@
     </div>
     
     <!-- Step 3: Result -->
+=======
+    <!-- Step 2: Result -->
+>>>>>>> feature/multi-style-generation
     <div id="result-section" class="section">
-        <h2>Step 3: Result</h2>
+        <h2>Results</h2>
         
         <div id="loading" class="loading-container" style="display: none;">
             <div class="loading-text" id="loading-message">Initializing...</div>
@@ -97,10 +101,25 @@
         </div>
         
         <div id="result-container" style="display: none;">
-            <div class="image-container">
-                <h3>Original:</h3>
-                <img id="original-img" alt="Original">
+            <div style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+                <div class="image-container">
+                    <h3>Original</h3>
+                    <img id="original-img" alt="Original">
+                </div>
+                <div class="image-container">
+                    <h3>Emotion Conditioned</h3>
+                    <img id="img-abstract" alt="Abstract" style="display: none;">
+                </div>
+                <div class="image-container">
+                    <h3>Image Conditioned</h3>
+                    <img id="img-realistic" alt="Realistic" style="display: none;">
+                </div>
+                <div class="image-container">
+                    <h3>Emotion & Image Conditioned</h3>
+                    <img id="img-scifi" alt="Combo" style="display: none;">
+                </div>
             </div>
+<<<<<<< HEAD
             <div class="image-container">
                 <h3>Generated:</h3>
                 <div id="generated-grid" style="display: none;">
@@ -118,6 +137,8 @@
                     </div>
                 </div>
                 <img id="generated-img" alt="Generated" style="display: none;">
+=======
+>>>>>>> feature/multi-style-generation
                 <div id="error-message" style="color: red; display: none;"></div>
             </div>
             <br><br>

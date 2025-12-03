@@ -13,21 +13,22 @@ class ProjectionMLP(nn.Module):
 
     def __init__(self, input_dim: int, output_dim: int, hidden_dim: int = 1024):
         super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.LayerNorm(hidden_dim),
-            nn.Tanh(),
-            nn.Linear(hidden_dim, output_dim),
-        )
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.ln1 = nn.LayerNorm(hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, output_dim)
         
         # Initialize with small weights for stability
-        for module in self.net.modules():
-            if isinstance(module, nn.Linear):
-                nn.init.xavier_uniform_(module.weight, gain=0.5)
-                nn.init.zeros_(module.bias)
+        nn.init.xavier_uniform_(self.fc1.weight, gain=0.5)
+        nn.init.zeros_(self.fc1.bias)
+        nn.init.xavier_uniform_(self.fc2.weight, gain=0.5)
+        nn.init.zeros_(self.fc2.bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.ndim == 1:
             x = x.unsqueeze(0)
-        return self.net(x)
+        
+        x = self.fc1(x)
+        x = self.ln1(x)
+        x = torch.tanh(x)
+        x = self.fc2(x)
         return x

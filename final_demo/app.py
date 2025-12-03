@@ -101,17 +101,17 @@ def capture_image():
 
 @app.route('/generate', methods=['POST'])
 def generate_styled_image():
-    """Generate styled image based on selected reference"""
+    """Generate all 3 styles: Abstract, Realistic, Combo"""
     global captured_image, generated_image
     
     try:
         # Initialize pipelines on first use
         initialize_pipelines()
         
-        data = request.json
-        style_choice = data['style']  # 'abstract', 'realistic', or 'scifi'
+        # data = request.json
+        # style_choice = data['style']  # Ignored, we generate all
         
-        print(f"[GENERATE] Generating with style: {style_choice}")
+        print(f"[GENERATE] Generating all styles...")
         
         if captured_image is None:
             print("[GENERATE ERROR] No captured image available")
@@ -135,45 +135,58 @@ def generate_styled_image():
         emotion = perception_output.get_dominant_emotion()
         print(f"[GENERATE] Detected emotion: {emotion}")
         
-        # Step 2: Generate styled image
-        print(f"[GENERATE] Generating {style_choice} style image...")
+        # Step 2: Generate all 3 styles
+        styles = ['abstract', 'realistic', 'scifi']
+        results = {}
         
-        # Send initial progress
-        progress_queue.put({'status': 'generating', 'progress': 0, 'message': 'Starting generation...'})
+        total_styles = len(styles)
         
-        # Generate with progress callback
-        def progress_callback(step, total_steps):
-            progress_pct = int((step / total_steps) * 100)
+        for i, style_choice in enumerate(styles):
+            print(f"[GENERATE] Generating {style_choice} ({i+1}/{total_styles})...")
+            
+            # Send progress update
             progress_queue.put({
-                'status': 'generating',
-                'progress': progress_pct,
-                'step': step,
-                'total_steps': total_steps,
-                'message': f'Generating... ({step}/{total_steps} steps)'
+                'status': 'generating', 
+                'progress': int((i / total_styles) * 100), 
+                'message': f'Generating {style_choice} ({i+1}/{total_styles})...'
             })
+            
+            # Generate with progress callback (mapped to sub-progress)
+            def progress_callback(step, total_steps):
+                # Calculate global progress: base for this style + fraction of this style
+                style_base = (i / total_styles) * 100
+                style_fraction = (step / total_steps) * (100 / total_styles)
+                global_progress = int(style_base + style_fraction)
+                
+                progress_queue.put({
+                    'status': 'generating',
+                    'progress': global_progress,
+                    'step': step,
+                    'total_steps': total_steps,
+                    'message': f'Generating {style_choice}... ({step}/{total_steps})'
+                })
+            
+            generated_pil = diffusion_pipeline.generate(
+                user_image=captured_image,
+                perception_vec=perception_vec,
+                style_choice=style_choice,
+                progress_callback=progress_callback,
+                emotion_label=emotion
+            )
+            
+            # Convert to base64
+            buffered = io.BytesIO()
+            generated_pil.save(buffered, format="JPEG", quality=95)
+            img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            results[style_choice] = f'data:image/jpeg;base64,{img_base64}'
         
-        generated_pil = diffusion_pipeline.generate(
-            user_image=captured_image,
-            perception_vec=perception_vec,
-            style_choice=style_choice,
-            progress_callback=progress_callback,
-            emotion_label=emotion
-        )
-        
-        progress_queue.put({'status': 'complete', 'progress': 100, 'message': 'Generation complete!'})
-        print("[GENERATE] Image generated successfully!")
-        
-        # Step 3: Convert PIL Image to base64 for frontend
-        buffered = io.BytesIO()
-        generated_pil.save(buffered, format="JPEG", quality=95)
-        img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        
-        print(f"[GENERATE] Success! Image encoded, length: {len(img_base64)}")
+        progress_queue.put({'status': 'complete', 'progress': 100, 'message': 'All generations complete!'})
+        print("[GENERATE] All images generated successfully!")
         
         return jsonify({
             'status': 'success',
-            'image': f'data:image/jpeg;base64,{img_base64}',
-            'message': f'Generated {style_choice} style image',
+            'images': results,
+            'message': 'Generated all styles',
             'emotion': emotion
         })
         

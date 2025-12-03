@@ -5,7 +5,6 @@ let capturedImageData = null;
 
 // DOM Elements
 const captureSection = document.getElementById('capture-section');
-const styleSection = document.getElementById('style-section');
 const resultSection = document.getElementById('result-section');
 const webcam = document.getElementById('webcam');
 const canvas = document.getElementById('canvas');
@@ -13,23 +12,18 @@ const preview = document.getElementById('preview');
 const previewContainer = document.getElementById('preview-container');
 const captureBtn = document.getElementById('capture-btn');
 const retakeBtn = document.getElementById('retake-btn');
-const continueBtn = document.getElementById('continue-btn');
-const backBtn = document.getElementById('back-btn');
+const generateBtn = document.getElementById('generate-btn');
 const resetBtn = document.getElementById('reset-btn');
-const styleBtns = document.querySelectorAll('.style-btn');
 const loading = document.getElementById('loading');
 const resultContainer = document.getElementById('result-container');
 const originalImg = document.getElementById('original-img');
-const generatedImg = document.getElementById('generated-img');
+const imgAbstract = document.getElementById('img-abstract');
+const imgRealistic = document.getElementById('img-realistic');
+const imgScifi = document.getElementById('img-scifi');
 const loadingMessage = document.getElementById('loading-message');
 const progressBar = document.getElementById('progress-bar');
 const progressText = document.getElementById('progress-text');
 const errorMessage = document.getElementById('error-message');
-const generateAllBtn = document.getElementById('generate-all-btn');
-const generatedGrid = document.getElementById('generated-grid');
-const genImgAbstract = document.getElementById('gen-img-abstract');
-const genImgRealistic = document.getElementById('gen-img-realistic');
-const genImgScifi = document.getElementById('gen-img-scifi');
 
 let eventSource = null;
 
@@ -76,12 +70,14 @@ async function sendCaptureToServer() {
     return response.json();
 }
 
-// Generate styled image
-async function generateStyled(style) {
+// Generate all styled images
+async function generateAllStyles() {
+    // Switch to result section
+    showSection(resultSection);
+
     // Reset UI
     loading.style.display = 'block';
     resultContainer.style.display = 'none';
-    generatedImg.style.display = 'none';
     errorMessage.style.display = 'none';
     loadingMessage.textContent = 'Starting generation...';
     progressBar.style.width = '0%';
@@ -131,7 +127,7 @@ async function generateStyled(style) {
         const response = await fetch('/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ style: style }),
+            body: JSON.stringify({}), // No style needed
             signal: controller.signal
         });
         
@@ -146,143 +142,37 @@ async function generateStyled(style) {
             resultContainer.style.display = 'block';
         } else {
             // Display results
-            originalImg.onload = function() {
-                console.log('Original image loaded successfully');
-            };
-            originalImg.onerror = function() {
-                console.error('Failed to load original image');
-            };
             originalImg.src = capturedImageData;
             
-            generatedImg.onload = function() {
-                console.log('Generated image loaded successfully');
-                generatedImg.style.display = 'block';
+            // Helper to set image source safely
+            const setImg = (imgElem, src) => {
+                if (src) {
+                    imgElem.src = src;
+                    imgElem.style.display = 'block';
+                } else {
+                    console.error('Missing image data');
+                }
             };
-            generatedImg.onerror = function() {
-                console.error('Failed to load generated image');
-                errorMessage.textContent = 'Error: Could not display generated image';
-                errorMessage.style.display = 'block';
-            };
-            generatedImg.src = data.image;
+
+            setImg(imgAbstract, data.images.abstract);
+            setImg(imgRealistic, data.images.realistic);
+            setImg(imgScifi, data.images.scifi);
             
             // Wait a moment for progress bar to show complete, then show results
             setTimeout(() => {
                 loading.style.display = 'none';
                 resultContainer.style.display = 'block';
+                // Scroll to results
+                resultContainer.scrollIntoView({ behavior: 'smooth' });
             }, 500);
         }
-        
-        console.log('Generated', style);
     } catch (error) {
         console.error('Generation error:', error);
-        let errorMsg = error.message;
-        if (error.name === 'AbortError') {
-            errorMsg = 'Generation timed out after 5 minutes. Please try again or reduce inference steps.';
-        }
-        errorMessage.textContent = 'Error: ' + errorMsg;
+        errorMessage.textContent = 'Error: ' + error.message;
         errorMessage.style.display = 'block';
         loading.style.display = 'none';
-        resultContainer.style.display = 'block';
-    } finally {
-        if (eventSource) {
-            eventSource.close();
-        }
+        eventSource.close();
     }
-}
-
-// Generate all styles sequentially and merge progress into a single bar
-async function generateAllStyles() {
-    const styles = ['abstract', 'realistic', 'scifi'];
-    const labels = { 'abstract': 'Abstract', 'realistic': 'Realistic', 'scifi': 'Combo' };
-    const total = styles.length;
-
-    // Reset UI
-    loading.style.display = 'block';
-    resultContainer.style.display = 'none';
-    generatedImg.style.display = 'none';
-    generatedGrid.style.display = 'none';
-    errorMessage.style.display = 'none';
-    loadingMessage.textContent = 'Starting generation...';
-    progressBar.style.width = '0%';
-    progressText.textContent = '0%';
-
-    const results = {};
-
-    for (let i = 0; i < total; i++) {
-        const style = styles[i];
-
-        // Connect SSE for this generation
-        if (eventSource) {
-            eventSource.close();
-        }
-        eventSource = new EventSource('/progress');
-
-        eventSource.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            if (data.type === 'keepalive') return;
-
-            // Calculate combined progress across all styles
-            const overall = Math.round(((i + (data.progress || 0) / 100) / total) * 100);
-            loadingMessage.textContent = `${labels[style]} — ${data.message || 'Generating...'} (${i+1}/${total})`;
-            progressBar.style.width = overall + '%';
-            progressText.textContent = overall + '%';
-        };
-
-        eventSource.onerror = function(err) {
-            console.error('SSE Error during generateAll:', err);
-            eventSource.close();
-        };
-
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 300000);
-
-            const resp = await fetch('/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ style: style }),
-                signal: controller.signal
-            });
-
-            clearTimeout(timeoutId);
-
-            const data = await resp.json();
-            if (data.status === 'error') {
-                throw new Error(data.message || 'Generation error');
-            }
-
-            results[style] = data.image;
-        } catch (error) {
-            console.error('generateAll error for', style, error);
-            errorMessage.textContent = 'Error: ' + (error.message || 'Unknown error');
-            errorMessage.style.display = 'block';
-            loading.style.display = 'none';
-            resultContainer.style.display = 'block';
-            if (eventSource) eventSource.close();
-            return;
-        } finally {
-            if (eventSource) {
-                eventSource.close();
-                eventSource = null;
-            }
-        }
-    }
-
-    // Display results
-    originalImg.src = capturedImageData;
-    genImgAbstract.src = results['abstract'];
-    genImgRealistic.src = results['realistic'];
-    genImgScifi.src = results['scifi'];
-
-    // Show grid and finalize progress bar
-    generatedGrid.style.display = 'flex';
-    progressBar.style.width = '100%';
-    progressText.textContent = '100%';
-
-    setTimeout(() => {
-        loading.style.display = 'none';
-        resultContainer.style.display = 'block';
-    }, 400);
 }
 
 // Reset application
@@ -298,6 +188,8 @@ async function resetApp() {
     webcam.style.display = 'block';
     captureBtn.style.display = 'inline';
     previewContainer.style.display = 'none';
+    resultContainer.style.display = 'none';
+    loading.style.display = 'none';
     
     // Reset progress bar
     progressBar.style.width = '0%';
@@ -312,7 +204,7 @@ async function resetApp() {
 captureBtn.addEventListener('click', captureImage);
 
 document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && captureSection.classList.contains('active') && webcam.style.display !== 'none') {
+    if (e.code === 'Space' && webcam.style.display !== 'none') {
         e.preventDefault();
         captureImage();
     }
@@ -324,26 +216,8 @@ retakeBtn.addEventListener('click', () => {
     previewContainer.style.display = 'none';
 });
 
-continueBtn.addEventListener('click', async () => {
+generateBtn.addEventListener('click', async () => {
     await sendCaptureToServer();
-    showSection(styleSection);
-});
-
-backBtn.addEventListener('click', () => {
-    showSection(captureSection);
-});
-
-styleBtns.forEach(btn => {
-    btn.addEventListener('click', async () => {
-        const style = btn.dataset.style;
-        showSection(resultSection);
-        await generateStyled(style);
-    });
-});
-
-// Generate all options button
-generateAllBtn.addEventListener('click', async () => {
-    showSection(resultSection);
     await generateAllStyles();
 });
 

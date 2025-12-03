@@ -12,7 +12,7 @@ SD_MODEL_ID = "runwayml/stable-diffusion-v1-5"  # SD 1.5 is compatible with Cont
 CONTROLNET_MODEL_ID = "lllyasviel/sd-controlnet-canny"
 IP_ADAPTER_MODEL_ID = "h94/IP-Adapter"  # Pre-trained IP-Adapter weights
 USE_LCM = True  # Use LCM-LoRA for 4-8 step fast generation
-USE_IP_ADAPTER = True  # Disabled to prevent crashes
+USE_IP_ADAPTER = False  # Disabled to prevent crashes
 
 # Device selection
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -25,33 +25,33 @@ IMAGE_WIDTH = 512
 # Style-specific configurations
 STYLES = {
     'abstract': {
-        'method': 'text',  # Text-based generation (no IP-Adapter)
+        'method': 'text',  
         'base_prompt': 'vibrant abstract expressionist painting, dynamic brushstrokes, emotional energy',
-        'num_inference_steps': 4,  # LCM allows 2-4 steps for text-only
+        'num_inference_steps': 4,  
         'use_controlnet': False,
-        'use_ipadapter': False,  # IP-Adapter NOT used for abstract
+        'use_ipadapter': False,  
         'style_strength': 0.8,
     },
     'realistic': {
-        'method': 'reference',  # Uses ControlNet + IP-Adapter
+        'method': 'reference', 
         'reference_path': os.path.join(PROJECT_ROOT, 'final_demo', 'static', 'references', 'realistic.jpg'),
         'base_prompt': 'photorealistic portrait, natural lighting, detailed face',
-        'num_inference_steps': 4,  # LCM allows 4-8 steps
+        'num_inference_steps': 4,  
         'use_controlnet': True,
-        'use_ipadapter': True,  # IP-Adapter DISABLED
+        'use_ipadapter': False,  
         'controlnet_type': 'canny',
-        'controlnet_conditioning_scale': 0.8,  # Increased from 0.5 to force stronger structural adherence
+        'controlnet_conditioning_scale': 0.8,  
         'ipadapter_scale': 0.6,
     },
     'scifi': {
-        'method': 'reference',  # Uses ControlNet + IP-Adapter
+        'method': 'reference', 
         'reference_path': os.path.join(PROJECT_ROOT, 'final_demo', 'static', 'references', 'scifi.jpg'),
-        'base_prompt': 'futuristic sci-fi portrait, neon lighting, cyberpunk aesthetic',
-        'num_inference_steps': 4,  # LCM allows 4-8 steps
+        'base_prompt': 'artistic portrait, expressive lighting, emotional atmosphere, detailed face, high quality, 8k resolution',
+        'num_inference_steps': 4,  
         'use_controlnet': True,
-        'use_ipadapter': True,  # IP-Adapter DISABLED
+        'use_ipadapter': False, 
         'controlnet_type': 'canny',
-        'controlnet_conditioning_scale': 0.8,  # Increased from 0.5 to force stronger structural adherence
+        'controlnet_conditioning_scale': 0.6, 
         'ipadapter_scale': 0.6,
     }
 }

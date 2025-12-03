@@ -258,6 +258,6 @@ if __name__ == '__main__':
     print("  • Realistic style: ControlNet + IP-Adapter (4 steps)")
     print("  • Scifi style: ControlNet + IP-Adapter (4 steps)")
     print("="*60)
-    print("Open http://localhost:5000 in your browser")
+    print("Open http://localhost:5001 in your browser")
     print("="*60)
     app.run(debug=True, host='0.0.0.0', port=5001, threaded=True)

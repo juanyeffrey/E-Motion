@@ -25,6 +25,11 @@ const loadingMessage = document.getElementById('loading-message');
 const progressBar = document.getElementById('progress-bar');
 const progressText = document.getElementById('progress-text');
 const errorMessage = document.getElementById('error-message');
+const generateAllBtn = document.getElementById('generate-all-btn');
+const generatedGrid = document.getElementById('generated-grid');
+const genImgAbstract = document.getElementById('gen-img-abstract');
+const genImgRealistic = document.getElementById('gen-img-realistic');
+const genImgScifi = document.getElementById('gen-img-scifi');
 
 let eventSource = null;
 
@@ -185,6 +190,101 @@ async function generateStyled(style) {
     }
 }
 
+// Generate all styles sequentially and merge progress into a single bar
+async function generateAllStyles() {
+    const styles = ['abstract', 'realistic', 'scifi'];
+    const labels = { 'abstract': 'Abstract', 'realistic': 'Realistic', 'scifi': 'Combo' };
+    const total = styles.length;
+
+    // Reset UI
+    loading.style.display = 'block';
+    resultContainer.style.display = 'none';
+    generatedImg.style.display = 'none';
+    generatedGrid.style.display = 'none';
+    errorMessage.style.display = 'none';
+    loadingMessage.textContent = 'Starting generation...';
+    progressBar.style.width = '0%';
+    progressText.textContent = '0%';
+
+    const results = {};
+
+    for (let i = 0; i < total; i++) {
+        const style = styles[i];
+
+        // Connect SSE for this generation
+        if (eventSource) {
+            eventSource.close();
+        }
+        eventSource = new EventSource('/progress');
+
+        eventSource.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'keepalive') return;
+
+            // Calculate combined progress across all styles
+            const overall = Math.round(((i + (data.progress || 0) / 100) / total) * 100);
+            loadingMessage.textContent = `${labels[style]} — ${data.message || 'Generating...'} (${i+1}/${total})`;
+            progressBar.style.width = overall + '%';
+            progressText.textContent = overall + '%';
+        };
+
+        eventSource.onerror = function(err) {
+            console.error('SSE Error during generateAll:', err);
+            eventSource.close();
+        };
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 300000);
+
+            const resp = await fetch('/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ style: style }),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            const data = await resp.json();
+            if (data.status === 'error') {
+                throw new Error(data.message || 'Generation error');
+            }
+
+            results[style] = data.image;
+        } catch (error) {
+            console.error('generateAll error for', style, error);
+            errorMessage.textContent = 'Error: ' + (error.message || 'Unknown error');
+            errorMessage.style.display = 'block';
+            loading.style.display = 'none';
+            resultContainer.style.display = 'block';
+            if (eventSource) eventSource.close();
+            return;
+        } finally {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+        }
+    }
+
+    // Display results
+    originalImg.src = capturedImageData;
+    genImgAbstract.src = results['abstract'];
+    genImgRealistic.src = results['realistic'];
+    genImgScifi.src = results['scifi'];
+
+    // Show grid and finalize progress bar
+    generatedGrid.style.display = 'flex';
+    progressBar.style.width = '100%';
+    progressText.textContent = '100%';
+
+    setTimeout(() => {
+        loading.style.display = 'none';
+        resultContainer.style.display = 'block';
+    }, 400);
+}
+
 // Reset application
 async function resetApp() {
     // Close SSE connection
@@ -239,6 +339,12 @@ styleBtns.forEach(btn => {
         showSection(resultSection);
         await generateStyled(style);
     });
+});
+
+// Generate all options button
+generateAllBtn.addEventListener('click', async () => {
+    showSection(resultSection);
+    await generateAllStyles();
 });
 
 resetBtn.addEventListener('click', resetApp);

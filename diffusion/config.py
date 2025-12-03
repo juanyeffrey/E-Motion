@@ -25,33 +25,33 @@ IMAGE_WIDTH = 512
 # Style-specific configurations
 STYLES = {
     'abstract': {
-        'method': 'text',  # Text-based generation (no IP-Adapter)
+        'method': 'text',  
         'base_prompt': 'vibrant abstract expressionist painting, dynamic brushstrokes, emotional energy',
-        'num_inference_steps': 4,  # LCM allows 2-4 steps for text-only
+        'num_inference_steps': 4,  
         'use_controlnet': False,
-        'use_ipadapter': False,  # IP-Adapter NOT used for abstract
+        'use_ipadapter': False,  
         'style_strength': 0.8,
     },
     'realistic': {
-        'method': 'reference',  # Uses ControlNet + IP-Adapter
+        'method': 'reference', 
         'reference_path': os.path.join(PROJECT_ROOT, 'final_demo', 'static', 'references', 'realistic.jpg'),
         'base_prompt': 'photorealistic portrait, natural lighting, detailed face',
-        'num_inference_steps': 4,  # LCM allows 4-8 steps
+        'num_inference_steps': 4,  
         'use_controlnet': True,
-        'use_ipadapter': False,  # IP-Adapter DISABLED
+        'use_ipadapter': False,  
         'controlnet_type': 'canny',
-        'controlnet_conditioning_scale': 0.8,  # Increased from 0.5 to force stronger structural adherence
+        'controlnet_conditioning_scale': 0.8,  
         'ipadapter_scale': 0.6,
     },
     'scifi': {
-        'method': 'reference',  # Uses ControlNet + IP-Adapter
+        'method': 'reference', 
         'reference_path': os.path.join(PROJECT_ROOT, 'final_demo', 'static', 'references', 'scifi.jpg'),
-        'base_prompt': 'futuristic sci-fi portrait, neon lighting, cyberpunk aesthetic',
-        'num_inference_steps': 4,  # LCM allows 4-8 steps
+        'base_prompt': 'artistic portrait, expressive lighting, emotional atmosphere, detailed face, high quality, 8k resolution',
+        'num_inference_steps': 4,  
         'use_controlnet': True,
-        'use_ipadapter': False,  # IP-Adapter DISABLED
+        'use_ipadapter': False, 
         'controlnet_type': 'canny',
-        'controlnet_conditioning_scale': 0.8,  # Increased from 0.5 to force stronger structural adherence
+        'controlnet_conditioning_scale': 0.5, 
         'ipadapter_scale': 0.6,
     }
 }

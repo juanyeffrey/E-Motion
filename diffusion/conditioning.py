@@ -60,10 +60,21 @@ class TextConditioner:
             self.projector.to(DEVICE)
             
             # Try to load trained weights
-            checkpoint_path = os.path.join("projection_layer", "checkpoints", "best_model.pth")
+            checkpoint_path = os.path.join("projection_layer", "checkpoints", "projection_best.pt")
+            if not os.path.exists(checkpoint_path):
+                # Fallback to old name
+                checkpoint_path = os.path.join("projection_layer", "checkpoints", "best_model.pth")
+            
             if os.path.exists(checkpoint_path):
                 print(f"[TextConditioner] Loading trained projection model from {checkpoint_path}")
-                state_dict = torch.load(checkpoint_path, map_location=DEVICE)
+                checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
+                
+                # Handle different checkpoint formats
+                if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+                    state_dict = checkpoint["model_state_dict"]
+                else:
+                    state_dict = checkpoint
+                    
                 self.projector.load_state_dict(state_dict)
             else:
                 print("[TextConditioner] No trained projection model found, using random initialization.")

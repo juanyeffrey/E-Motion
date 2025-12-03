@@ -123,11 +123,6 @@ projection_checkpoints*/
 projection_layer/checkpoints/
 projection_layer/*_checkpoints/
 
-# Output images from demos
-outputs/
-*.png
-*.jpg
-
 # Live streaming & webcam frames
 frames/
 recordings/

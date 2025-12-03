@@ -44,6 +44,11 @@
         .image-container h3 {
             margin-top: 0;
         }
+        /* Generated grid styles */
+        #generated-grid { display: flex; gap: 12px; }
+        .generated-item { text-align: center; }
+        .generated-item img { width: 300px; height: auto; display: block; }
+        .gen-label { margin-top: 6px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -73,6 +78,7 @@
         <button class="style-btn" data-style="abstract">Abstract</button>
         <button class="style-btn" data-style="realistic">Realistic</button>
         <button class="style-btn" data-style="scifi">Combo</button>
+        <button id="generate-all-btn">Generate all options</button>
         <br><br>
         <button id="back-btn">Back</button>
     </div>
@@ -97,6 +103,20 @@
             </div>
             <div class="image-container">
                 <h3>Generated:</h3>
+                <div id="generated-grid" style="display: none;">
+                    <div class="generated-item">
+                        <img id="gen-img-abstract" alt="Abstract">
+                        <div class="gen-label">Abstract</div>
+                    </div>
+                    <div class="generated-item">
+                        <img id="gen-img-realistic" alt="Realistic">
+                        <div class="gen-label">Realistic</div>
+                    </div>
+                    <div class="generated-item">
+                        <img id="gen-img-scifi" alt="Combo">
+                        <div class="gen-label">Combo</div>
+                    </div>
+                </div>
                 <img id="generated-img" alt="Generated" style="display: none;">
                 <div id="error-message" style="color: red; display: none;"></div>
             </div>

@@ -13,14 +13,14 @@ const preview = document.getElementById('preview');
 const previewContainer = document.getElementById('preview-container');
 const captureBtn = document.getElementById('capture-btn');
 const retakeBtn = document.getElementById('retake-btn');
-const continueBtn = document.getElementById('continue-btn');
-const backBtn = document.getElementById('back-btn');
+const generateBtn = document.getElementById('generate-btn');
 const resetBtn = document.getElementById('reset-btn');
-const styleBtns = document.querySelectorAll('.style-btn');
 const loading = document.getElementById('loading');
 const resultContainer = document.getElementById('result-container');
 const originalImg = document.getElementById('original-img');
-const generatedImg = document.getElementById('generated-img');
+const imgAbstract = document.getElementById('img-abstract');
+const imgRealistic = document.getElementById('img-realistic');
+const imgScifi = document.getElementById('img-scifi');
 const loadingMessage = document.getElementById('loading-message');
 const progressBar = document.getElementById('progress-bar');
 const progressText = document.getElementById('progress-text');
@@ -71,12 +71,14 @@ async function sendCaptureToServer() {
     return response.json();
 }
 
-// Generate styled image
-async function generateStyled(style) {
+// Generate all styled images
+async function generateAllStyles() {
+    // Switch to result section
+    showSection(resultSection);
+
     // Reset UI
     loading.style.display = 'block';
     resultContainer.style.display = 'none';
-    generatedImg.style.display = 'none';
     errorMessage.style.display = 'none';
     loadingMessage.textContent = 'Starting generation...';
     progressBar.style.width = '0%';
@@ -126,7 +128,7 @@ async function generateStyled(style) {
         const response = await fetch('/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ style: style }),
+            body: JSON.stringify({}), // No style needed
             signal: controller.signal
         });
         
@@ -141,50 +143,38 @@ async function generateStyled(style) {
             resultContainer.style.display = 'block';
         } else {
             // Display results
-            originalImg.onload = function() {
-                console.log('Original image loaded successfully');
-            };
-            originalImg.onerror = function() {
-                console.error('Failed to load original image');
-            };
             originalImg.src = capturedImageData;
             
-            generatedImg.onload = function() {
-                console.log('Generated image loaded successfully');
-                generatedImg.style.display = 'block';
+            // Helper to set image source safely
+            const setImg = (imgElem, src) => {
+                if (src) {
+                    imgElem.src = src;
+                    imgElem.style.display = 'block';
+                } else {
+                    console.error('Missing image data');
+                }
             };
-            generatedImg.onerror = function() {
-                console.error('Failed to load generated image');
-                errorMessage.textContent = 'Error: Could not display generated image';
-                errorMessage.style.display = 'block';
-            };
-            generatedImg.src = data.image;
+
+            setImg(imgAbstract, data.images.abstract);
+            setImg(imgRealistic, data.images.realistic);
+            setImg(imgScifi, data.images.scifi);
             
             // Wait a moment for progress bar to show complete, then show results
             setTimeout(() => {
                 loading.style.display = 'none';
                 resultContainer.style.display = 'block';
+                // Scroll to results
+                resultContainer.scrollIntoView({ behavior: 'smooth' });
             }, 500);
         }
-        
-        console.log('Generated', style);
     } catch (error) {
         console.error('Generation error:', error);
-        let errorMsg = error.message;
-        if (error.name === 'AbortError') {
-            errorMsg = 'Generation timed out after 5 minutes. Please try again or reduce inference steps.';
-        }
-        errorMessage.textContent = 'Error: ' + errorMsg;
+        errorMessage.textContent = 'Error: ' + error.message;
         errorMessage.style.display = 'block';
         loading.style.display = 'none';
-        resultContainer.style.display = 'block';
-    } finally {
-        if (eventSource) {
-            eventSource.close();
-        }
+        eventSource.close();
     }
 }
-
 // Reset application
 async function resetApp() {
     // Close SSE connection
@@ -198,6 +188,8 @@ async function resetApp() {
     webcam.style.display = 'block';
     captureBtn.style.display = 'inline';
     previewContainer.style.display = 'none';
+    resultContainer.style.display = 'none';
+    loading.style.display = 'none';
     
     // Reset progress bar
     progressBar.style.width = '0%';
@@ -212,7 +204,7 @@ async function resetApp() {
 captureBtn.addEventListener('click', captureImage);
 
 document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && captureSection.classList.contains('active') && webcam.style.display !== 'none') {
+    if (e.code === 'Space' && webcam.style.display !== 'none') {
         e.preventDefault();
         captureImage();
     }
@@ -224,21 +216,9 @@ retakeBtn.addEventListener('click', () => {
     previewContainer.style.display = 'none';
 });
 
-continueBtn.addEventListener('click', async () => {
+generateBtn.addEventListener('click', async () => {
     await sendCaptureToServer();
-    showSection(styleSection);
-});
-
-backBtn.addEventListener('click', () => {
-    showSection(captureSection);
-});
-
-styleBtns.forEach(btn => {
-    btn.addEventListener('click', async () => {
-        const style = btn.dataset.style;
-        showSection(resultSection);
-        await generateStyled(style);
-    });
+    await generateAllStyles();
 });
 
 resetBtn.addEventListener('click', resetApp);

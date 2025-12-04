@@ -26,8 +26,8 @@ generated_image = None
 perception_pipeline = None
 diffusion_pipeline = None
 
-# Progress tracking for loading bar
-progress_queue = queue.Queue()
+# Store queues for each request ID
+progress_queues = {}
 
 def initialize_pipelines():
     """Lazy initialization of heavy pipelines"""
@@ -105,6 +105,17 @@ def generate_styled_image():
     global captured_image, generated_image
     
     try:
+        data = request.json
+        request_id = data.get('request_id')
+        
+        # Create a dedicated queue for this request
+        if request_id:
+            progress_queues[request_id] = queue.Queue()
+            current_queue = progress_queues[request_id]
+        else:
+            # Fallback for legacy calls (shouldn't happen with updated js)
+            current_queue = queue.Queue()
+
         # Initialize pipelines on first use
         initialize_pipelines()
         
@@ -145,7 +156,7 @@ def generate_styled_image():
             print(f"[GENERATE] Generating {style_choice} ({i+1}/{total_styles})...")
             
             # Send progress update
-            progress_queue.put({
+            current_queue.put({
                 'status': 'generating', 
                 'progress': int((i / total_styles) * 100), 
                 'message': f'Generating {style_choice} ({i+1}/{total_styles})...'
@@ -158,7 +169,7 @@ def generate_styled_image():
                 style_fraction = (step / total_steps) * (100 / total_styles)
                 global_progress = int(style_base + style_fraction)
                 
-                progress_queue.put({
+                current_queue.put({
                     'status': 'generating',
                     'progress': global_progress,
                     'step': step,
@@ -180,9 +191,15 @@ def generate_styled_image():
             img_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
             results[style_choice] = f'data:image/jpeg;base64,{img_base64}'
         
-        progress_queue.put({'status': 'complete', 'progress': 100, 'message': 'All generations complete!'})
+        current_queue.put({'status': 'complete', 'progress': 100, 'message': 'All generations complete!'})
         print("[GENERATE] All images generated successfully!")
         
+        # Clean up queue
+        if request_id and request_id in progress_queues:
+            # Give a moment for the complete message to be read
+            time.sleep(1)
+            del progress_queues[request_id]
+
         return jsonify({
             'status': 'success',
             'images': results,
@@ -196,19 +213,23 @@ def generate_styled_image():
         traceback.print_exc()
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
-        print(f"[GENERATE ERROR] {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'status': 'error', 'message': str(e)}), 400
-
 @app.route('/progress')
 def progress():
     """Server-Sent Events endpoint for progress updates"""
+    request_id = request.args.get('request_id')
+    
     def generate():
+        if not request_id or request_id not in progress_queues:
+            # If no ID or invalid ID, just keep alive until client reconnects with valid ID
+            yield f"data: {{\"type\": \"keepalive\"}}\n\n"
+            return
+
+        q = progress_queues[request_id]
+        
         while True:
             try:
                 # Get progress update from queue (with timeout)
-                message = progress_queue.get(timeout=30)
+                message = q.get(timeout=30)
                 yield f"data: {json.dumps(message)}\n\n"
                 
                 # Stop if generation is complete or failed
@@ -216,7 +237,9 @@ def progress():
                     break
             except queue.Empty:
                 # Send keepalive
-                yield f"data: {{\"type\": \"keepalive\"}}\\n\\n"
+                yield f"data: {{\"type\": \"keepalive\"}}\n\n"
+            except Exception:
+                break
     
     return Response(generate(), mimetype='text/event-stream')
 
@@ -227,12 +250,8 @@ def reset():
     captured_image = None
     generated_image = None
     
-    # Clear progress queue
-    while not progress_queue.empty():
-        try:
-            progress_queue.get_nowait()
-        except queue.Empty:
-            break
+    # Clear all queues
+    progress_queues.clear()
     
     return jsonify({'status': 'success', 'message': 'Reset successful'})
 

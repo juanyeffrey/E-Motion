@@ -83,12 +83,15 @@ async function generateAllStyles() {
     progressBar.style.width = '0%';
     progressText.textContent = '0%';
     
+    // Generate unique request ID
+    const requestId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    
     // Connect to SSE for progress updates
     if (eventSource) {
         eventSource.close();
     }
     
-    eventSource = new EventSource('/progress');
+    eventSource = new EventSource(`/progress?request_id=${requestId}`);
     
     eventSource.onmessage = function(event) {
         const data = JSON.parse(event.data);
@@ -120,18 +123,23 @@ async function generateAllStyles() {
     
     // Start generation
     try {
-        // Add timeout to prevent indefinite waiting
+        console.log('Starting generation request...');
+        // Add timeout to prevent indefinite waiting (increased to 15 mins for CPU usage)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout
+        const timeoutId = setTimeout(() => {
+            console.error('Generation timed out after 15 minutes');
+            controller.abort();
+        }, 900000); // 15 min timeout
         
         const response = await fetch('/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}), // No style needed
+            body: JSON.stringify({ request_id: requestId }), // Pass request ID
             signal: controller.signal
         });
         
         clearTimeout(timeoutId);
+        console.log('Generation response received');
         
         const data = await response.json();
         
@@ -147,13 +155,16 @@ async function generateAllStyles() {
             // Helper to set image source safely
             const setImg = (imgElem, src) => {
                 if (src) {
+                    console.log(`Setting image for ${imgElem.id}, data length: ${src.length}`);
                     imgElem.src = src;
                     imgElem.style.display = 'block';
                 } else {
-                    console.error('Missing image data');
+                    console.error(`Missing image data for ${imgElem.id}`);
+                    imgElem.alt = 'Generation failed';
                 }
             };
 
+            console.log('Received images:', Object.keys(data.images));
             setImg(imgAbstract, data.images.abstract);
             setImg(imgRealistic, data.images.realistic);
             setImg(imgScifi, data.images.scifi);
